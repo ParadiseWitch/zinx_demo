@@ -1,6 +1,7 @@
 package znet
 
 import (
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -14,43 +15,40 @@ type Server struct {
 	Port      int
 }
 
+func CallBackToClient(conn *net.TCPConn, data []byte, cnt int) error {
+	fmt.Println("[Conn Handle] CallBackToClient ... ")
+	if _, err := conn.Write(data[:cnt]); err != nil {
+		fmt.Println("write back buf err ", err)
+		return errors.New("CallBackToClient error")
+	}
+	return nil
+}
+
 func (s *Server) Start() {
 	fmt.Printf("[START] Server listenner at IP: %s, Port %d, is starting\\n\n", s.IP, s.Port)
-	addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
-	if err != nil {
-		fmt.Println("resolve tcp addr err: ", err)
-		return
-	}
-	listenner, err := net.ListenTCP(s.IPVersion, addr)
-	if err != nil {
-		fmt.Println("listen", s.IPVersion, "err", err)
-		return
-	}
-	fmt.Println("start Zinx server  ", s.Name, " succ, now listenning...")
-
 	go func() {
+		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
+		if err != nil {
+			fmt.Println("resolve tcp addr err: ", err)
+			return
+		}
+		listenner, err := net.ListenTCP(s.IPVersion, addr)
+		if err != nil {
+			fmt.Println("listen", s.IPVersion, "err", err)
+			return
+		}
+		fmt.Println("start Zinx server  ", s.Name, " succ, now listenning...")
+		var cid uint32
+		cid = 0
 		for {
 			conn, err := listenner.AcceptTCP()
 			if err != nil {
 				fmt.Println("Accept err ", err)
 				continue
 			}
-
-			go func() {
-				for {
-					buf := make([]byte, 512)
-					cnt, err2 := conn.Read(buf)
-					if err2 != nil {
-						fmt.Println("recv buf err ", err)
-						continue
-					}
-
-					if _, err := conn.Write(buf[:cnt]); err != nil {
-						fmt.Println("write back buf err ", err)
-						continue
-					}
-				}
-			}()
+			dealConn := NewConntion(conn, cid, CallBackToClient)
+			cid++
+			go dealConn.Start()
 		}
 	}()
 }
@@ -61,8 +59,6 @@ func (s *Server) Stop() {
 
 func (s *Server) Serve() {
 	s.Start()
-
-	//阻塞,否则主Go退出， listenner的go将会退出
 	for {
 		time.Sleep(10 * time.Second)
 	}
