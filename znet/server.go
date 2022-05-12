@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net"
 	"time"
+	"zinx_demo/utils"
 	"zinx_demo/ziface"
 )
 
@@ -21,6 +22,10 @@ func (s *Server) AddRouter(router ziface.IRouter) {
 
 func (s *Server) Start() {
 	fmt.Printf("[START] Server listenner at IP: %s, Port %d, is starting\\n\n", s.IP, s.Port)
+	fmt.Printf("[Zinx] Version: %s, MaxConn: %d,  MaxPacketSize: %d\n",
+		utils.GlobalObject.Version,
+		utils.GlobalObject.MaxConn,
+		utils.GlobalObject.MaxPacketSize)
 	go func() {
 		addr, err := net.ResolveTCPAddr(s.IPVersion, fmt.Sprintf("%s:%d", s.IP, s.Port))
 		if err != nil {
@@ -60,6 +65,7 @@ func (s *Server) Serve() {
 }
 
 func NewServer(name string) ziface.IServer {
+	utils.GlobalObject.Reload()
 	return &Server{
 		Name:      name,
 		IPVersion: "tcp4",
