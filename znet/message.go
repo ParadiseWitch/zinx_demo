@@ -8,9 +8,9 @@ type Message struct {
 
 func NewMsgPackage(id uint32, data []byte) *Message {
 	return &Message{
-		Id:     id,
+		Id:      id,
 		DataLen: uint32(len(data)),
-		Data:   data,
+		Data:    data,
 	}
 }
 
@@ -18,7 +18,7 @@ func (m *Message) GetMsgId() uint32 {
 	return m.Id
 }
 
-func (m *Message) GetMsgLen() uint32 {
+func (m *Message) GetMsgDataLen() uint32 {
 	return m.DataLen
 }
 
@@ -30,7 +30,7 @@ func (m *Message) SetMsgId(id uint32) {
 	m.Id = id
 }
 
-func (m *Message) SetMsgLen(len uint32) {
+func (m *Message) SetMsgDataLen(len uint32) {
 	m.DataLen = len
 }
 
