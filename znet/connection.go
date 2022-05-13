@@ -51,7 +51,7 @@ func (c *Connection) Start() {
 }
 
 func (c *Connection) Stop() {
-	if c.isClosed == true {
+	if c.isClosed {
 		return
 	}
 	c.isClosed = true

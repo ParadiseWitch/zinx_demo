@@ -38,8 +38,7 @@ func (s *Server) Start() {
 			return
 		}
 		fmt.Println("start Zinx server  ", s.Name, " succ, now listenning...")
-		var cid uint32
-		cid = 0
+		var cid uint32 = 0
 		for {
 			conn, err := listenner.AcceptTCP()
 			if err != nil {
