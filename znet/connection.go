@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"zinx_demo/utils"
 	"zinx_demo/ziface"
 )
 
@@ -76,7 +77,11 @@ func (c *Connection) StartReader() {
 			conn: c,
 			msg:  msg, //将之前的buf 改成 msg
 		}
-		go c.MsgHandler.DoMsgHandler(&req)
+		if utils.GlobalObject.WorkerPoolSize > 0 {
+			c.MsgHandler.SendMsgToTaskQueue(&req)
+		} else {
+			go c.MsgHandler.DoMsgHandler(&req)
+		}
 	}
 }
 
