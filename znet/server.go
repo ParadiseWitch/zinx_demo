@@ -9,11 +9,26 @@ import (
 )
 
 type Server struct {
-	Name       string
-	IPVersion  string
-	IP         string
-	Port       int
-	msgHandler ziface.IMsgHandler
+	Name        string                        //服务器的名称
+	IPVersion   string                        //tcp4 or other
+	IP          string                        //服务绑定的IP地址
+	Port        int                           //服务绑定的端口
+	msgHandler  ziface.IMsgHandler            //当前Server的消息管理模块，用来绑定MsgId和对应的处理方法
+	ConnMgr     ziface.IConnManager           //当前Server的链接管理器
+	OnConnStart func(conn ziface.IConnection) //该Server的连接创建时Hook函数
+	OnConnStop  func(conn ziface.IConnection) //该Server的连接断开时的Hook函数
+}
+
+func NewServer(name string) ziface.IServer {
+	utils.GlobalObject.Reload()
+	return &Server{
+		Name:       name,
+		IPVersion:  "tcp4",
+		IP:         "0.0.0.0",
+		Port:       7777,
+		msgHandler: NewMsgHandler(),
+		ConnMgr:    NewConnManager(), //创建ConnManager
+	}
 }
 
 func (s *Server) AddRouter(msgId uint32, router ziface.IRouter) {
@@ -48,7 +63,13 @@ func (s *Server) Start() {
 				fmt.Println("Accept err ", err)
 				continue
 			}
-			dealConn := NewConntion(conn, cid, s.msgHandler)
+			// 设置服务器最大连接控制,如果超过最大连接，那么则关闭此新的连接
+			if s.ConnMgr.Len() >= utils.GlobalObject.MaxConn {
+				conn.Close()
+				continue
+			}
+
+			dealConn := NewConntion(s, conn, cid, s.msgHandler)
 			cid++
 			go dealConn.Start()
 		}
@@ -57,6 +78,9 @@ func (s *Server) Start() {
 
 func (s *Server) Stop() {
 	fmt.Println("[STOP] Zinx server , name ", s.Name)
+
+	//将其他需要清理的连接信息或者其他信息 也要一并停止或者清理
+	s.ConnMgr.ClearConn()
 }
 
 func (s *Server) Serve() {
@@ -66,13 +90,32 @@ func (s *Server) Serve() {
 	}
 }
 
-func NewServer(name string) ziface.IServer {
-	utils.GlobalObject.Reload()
-	return &Server{
-		Name:       name,
-		IPVersion:  "tcp4",
-		IP:         "0.0.0.0",
-		Port:       7777,
-		msgHandler: NewMsgHandler(),
+func (s *Server) GetConnMgr() ziface.IConnManager {
+	return s.ConnMgr
+}
+
+//设置该Server的连接创建时Hook函数
+func (s *Server) SetOnConnStart(hookFunc func(ziface.IConnection)) {
+	s.OnConnStart = hookFunc
+}
+
+//设置该Server的连接断开时的Hook函数
+func (s *Server) SetOnConnStop(hookFunc func(ziface.IConnection)) {
+	s.OnConnStop = hookFunc
+}
+
+//调用连接OnConnStart Hook函数
+func (s *Server) CallOnConnStart(conn ziface.IConnection) {
+	if s.OnConnStart != nil {
+		fmt.Println("---> CallOnConnStart....")
+		s.OnConnStart(conn)
+	}
+}
+
+//调用连接OnConnStop Hook函数
+func (s *Server) CallOnConnStop(conn ziface.IConnection) {
+	if s.OnConnStop != nil {
+		fmt.Println("---> CallOnConnStop....")
+		s.OnConnStop(conn)
 	}
 }
