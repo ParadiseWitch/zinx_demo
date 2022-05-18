@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"sync"
 	"zinx_demo/utils"
 	"zinx_demo/ziface"
 )
@@ -16,8 +17,10 @@ type Connection struct {
 	isClosed     bool
 	MsgHandler   ziface.IMsgHandler
 	ExitBuffChan chan bool
-	msgChan      chan []byte //无缓冲管道，用于读、写两个goroutine之间的消息通信
-	msgBuffChan  chan []byte //有关冲管道，用于读、写两个goroutine之间的消息通信
+	msgChan      chan []byte            //无缓冲管道，用于读、写两个goroutine之间的消息通信
+	msgBuffChan  chan []byte            //有关冲管道，用于读、写两个goroutine之间的消息通信
+	property     map[string]interface{} //链接属性
+	propertyLock sync.RWMutex           //保护链接属性修改的锁
 }
 
 func NewConntion(server ziface.IServer, conn *net.TCPConn, connID uint32, msgHandler ziface.IMsgHandler) *Connection {
@@ -30,7 +33,7 @@ func NewConntion(server ziface.IServer, conn *net.TCPConn, connID uint32, msgHan
 		ExitBuffChan: make(chan bool, 1),
 		msgChan:      make(chan []byte),
 		msgBuffChan:  make(chan []byte, utils.GlobalObject.MaxMsgChanLen), //不要忘记初始化
-
+		property:     make(map[string]interface{}),
 	}
 	c.TcpServer.GetConnMgr().Add(c)
 	return c
@@ -201,4 +204,27 @@ func (c *Connection) SendBuffMsg(msgId uint32, data []byte) error {
 	c.msgBuffChan <- msg
 
 	return nil
+}
+
+func (c *Connection) SetProperty(key string, val interface{}) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+
+	c.property[key] = val
+}
+
+func (c *Connection) GetProperty(key string) (interface{}, error) {
+	c.propertyLock.RLock()
+	defer c.propertyLock.RUnlock()
+	if property, ok := c.property[key]; !ok {
+		return nil, errors.New("no property found")
+	} else {
+		return property, nil
+	}
+}
+
+func (c *Connection) RemoveProperty(key string) {
+	c.propertyLock.Lock()
+	defer c.propertyLock.Unlock()
+	delete(c.property, key)
 }

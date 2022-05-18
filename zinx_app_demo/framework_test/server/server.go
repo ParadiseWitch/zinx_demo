@@ -40,6 +40,11 @@ func (hw *HelloZinxRouter) Handle(request ziface.IRequest) {
 //创建连接的时候执行
 func DoConnectionBegin(conn ziface.IConnection) {
 	fmt.Println("DoConnecionBegin is Called ... ")
+	//=============设置两个链接属性，在连接创建之后===========
+	fmt.Println("Set conn Name, Home done!")
+	conn.SetProperty("Name", "Maid")
+	conn.SetProperty("Age", "14")
+	//===================================================
 	err := conn.SendMsg(2, []byte("DoConnection BEGIN..."))
 	if err != nil {
 		fmt.Println(err)
@@ -48,6 +53,14 @@ func DoConnectionBegin(conn ziface.IConnection) {
 
 //连接断开的时候执行
 func DoConnectionLost(conn ziface.IConnection) {
+	//============在连接销毁之前，查询conn的Name，Home属性=====
+	if name, err := conn.GetProperty("Name"); err == nil {
+		fmt.Println("Conn Property Name = ", name)
+	}
+	if age, err := conn.GetProperty("Age"); err == nil {
+		fmt.Println("Conn Property Age = ", age)
+	}
+	//===================================================
 	fmt.Println("DoConneciotnLost is Called ... ")
 }
 
