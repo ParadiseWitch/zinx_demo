@@ -20,6 +20,7 @@ func NewAOIManager(minX, maxX, cntsX, minY, maxY, cntsY int) *AOIManager {
 		MinY:  minY,
 		MaxY:  maxY,
 		CntsY: cntsY,
+		grids: make(map[int]*Grid),
 	}
 	//给AOI初始化区域中所有的格子
 	for y := 0; y < cntsY; y++ {
@@ -117,6 +118,36 @@ func (aoiMgr *AOIManager) GetPIDsByPos(x, y float32) (playerIDs []int) {
 	}
 
 	return
+}
+
+//通过GID获取当前格子的全部playerID
+func (aoiMgr *AOIManager) GetPidsByGid(gID int) (playerIDs []int) {
+	playerIDs = aoiMgr.grids[gID].GetPlyerIDs()
+	return
+}
+
+//移除一个格子中的PlayerID
+func (aoiMgr *AOIManager) RemovePidFromGrid(pID, gID int) {
+	aoiMgr.grids[gID].Remove(pID)
+}
+
+//添加一个PlayerID到一个格子中
+func (aoiMgr *AOIManager) AddPidToGrid(pID, gID int) {
+	aoiMgr.grids[gID].Add(pID)
+}
+
+//通过横纵坐标添加一个Player到一个格子中
+func (aoiMgr *AOIManager) AddToGridByPos(pID int, x, y float32) {
+	gID := aoiMgr.GetGIDByPos(x, y)
+	grid := aoiMgr.grids[gID]
+	grid.Add(pID)
+}
+
+//通过横纵坐标把一个Player从对应的格子中删除
+func (aoiMgr *AOIManager) RemoveFromGridByPos(pID int, x, y float32) {
+	gID := aoiMgr.GetGIDByPos(x, y)
+	grid := aoiMgr.grids[gID]
+	grid.Remove(pID)
 }
 
 func (aoiMgr *AOIManager) String() string {
