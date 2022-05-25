@@ -1,6 +1,6 @@
 syntax="proto3";                //Proto协议
 package pb;                     //当前包名
-option go_package="pd/"; // 指定生成go文件保存到当前包中
+option go_package="pb/"; // 指定生成go文件保存到当前包中
 option csharp_namespace="Pb";   //给C#提供的选项
 
 
